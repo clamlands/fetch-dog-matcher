@@ -5,9 +5,14 @@
 	import { onMount } from 'svelte';
 
 	const baseURL = 'https://frontend-take-home-service.fetch.com';
-	let loginName = 'Noah';
-	let loginEmail = 'noah.mailloux1@gmail.com';
+	let dogIdsArray = $state([]);
 	let dogObjectArray = $state([]);
+	let numberOfPages = $derived(Math.ceil(dogObjectArray.length / 25));
+	let currentPage = $state(1);
+	let currentPageDogObjectArray = $derived(
+		dogObjectArray.slice((currentPage - 1) * 25, currentPage * 25 + 1)
+	);
+	// let currentPageDogObjectArray = $derived(dogObjectArray);
 	const breedsArray = $state([]);
 	let selectedBreed = $state([]);
 	let searchSort = $state('breed-asc');
@@ -18,7 +23,7 @@
 
 	//Automatically update search results upon changing any sorting or breed selection
 	$effect(() => {
-		dogSearch();
+		fetchDogIds();
 	});
 
 	onMount(() => {
@@ -79,15 +84,38 @@
 	}
 
 	//Search for dogs
-	async function dogSearch() {
-		const endpoint = `${baseURL}${getDogSearchEndpoints()}`;
-		const response = await fetch(endpoint, {
-			credentials: 'include'
-		});
-		const json = await response.json();
-		const result = JSON.stringify(json);
+	async function fetchDogIds() {
+		const tempDogIdsArray = [];
+		let endpoint = getDogSearchEndpoints();
+		let nextExists;
+		do {
+			if (tempDogIdsArray.length >= 100) {
+				break;
+			}
+			const response = await fetch(`${baseURL}${endpoint}`, {
+				credentials: 'include'
+			});
+			const json = await response.json();
+			if ('next' in json) {
+				nextExists = true;
+			} else {
+				nextExists = false;
+			}
+			//update the endpoint to get next 25 results
+			endpoint = json.next;
+			tempDogIdsArray.push(...json.resultIds);
+		} while (nextExists);
+
+		// const response = await fetch(endpoint, {
+		// 	credentials: 'include'
+		// });
+		// const json = await response.json();
+
+		// console.log(json);
+		// dogIdsArray.push(json.resultIds);
 		//Now that array of IDs is fetched, fetch dog objects
-		fetchDogs(json.resultIds);
+		dogIdsArray.push(...tempDogIdsArray);
+		fetchDogs(tempDogIdsArray);
 	}
 
 	//POST request to fetch dog objects
@@ -122,7 +150,6 @@
 
 	//submits the favorited dogs to get the ID for the dog match
 	async function getMatchId() {
-		console.log(favoritesArray);
 		const endpoint = `${baseURL}/dogs/match`;
 		const response = await fetch(endpoint, {
 			credentials: 'include',
@@ -137,7 +164,6 @@
 
 	//POST request to fetch dog objects
 	async function fetchMatchObject(matchId) {
-		console.log(matchId);
 		const endpoint = `${baseURL}/dogs`;
 		const response = await fetch(endpoint, {
 			credentials: 'include',
@@ -150,15 +176,15 @@
 	}
 </script>
 
-<button type="button" onclick={handleLogout}>Logout</button>
-<button type="button" onclick={getBreeds}>Breeds</button>
 <section class="top-section">
 	<h1>Fetch Dog Matcher</h1>
 	<div>Find the right dog for you!</div>
-	<div>Choose your favorite breeds and filter your search by age and location.</div>
+	<p class="instructions">
+		Choose your favorite breeds and filter your search by age and location.
+	</p>
 	<hr />
-	<div>Select Breeds:</div>
-	<div class="breed-select">
+	<div class="align-left">Select Breeds:</div>
+	<div class="breed-select margin-bottom-small">
 		{#each breedsArray as breed}
 			<label class="breeds">
 				<input
@@ -203,13 +229,28 @@
 			</select>
 		</label>
 	</div>
+	<p class="instructions">
+		As you search, click the images of the dogs you love most, and they will be added to your
+		favorites. Once you're finished, click the "Get Your Match!" button and we'll pick the best dog
+		for you.
+	</p>
 </section>
+
 <section class="bottom-section">
-	<button type="button" onclick={dogSearch}>Dog Search</button>
-	<button type="button" onclick={getMatchId}>Get Your Match!</button>
+	<button type="button" onclick={getMatchId} class="big-button">Get Your Match!</button>
+	<div class="page-numbers">
+		{#each { length: numberOfPages }, index}
+			<button
+				onclick={() => {
+					currentPage = index + 1;
+				}}
+				class={index + 1 === currentPage ? 'page-number active' : 'page-number'}>{index + 1}</button
+			>
+		{/each}
+	</div>
 	{#if matchObject}
-		<div class="dog-card">
-			<div>YOUR MATCH!!!</div>
+		<div class="dog-card match-card">
+			<h1>YOUR MATCH!!!</h1>
 			<img src={matchObject.img} alt="Dog match" />
 			<div>Name: {matchObject.name}</div>
 			<div>Age: {matchObject.age}</div>
@@ -219,7 +260,7 @@
 	{/if}
 	<div class="dog-cards">
 		<!-- Create a dog card for each object returned by the search results -->
-		{#each dogObjectArray as dog}
+		{#each currentPageDogObjectArray as dog}
 			<DogCard
 				id={dog.id}
 				img={dog.img}
@@ -232,4 +273,15 @@
 			/>
 		{/each}
 	</div>
+	<div class="page-numbers">
+		{#each { length: numberOfPages }, index}
+			<button
+				onclick={() => {
+					currentPage = index + 1;
+				}}
+				class={index + 1 === currentPage ? 'page-number active' : 'page-number'}>{index + 1}</button
+			>
+		{/each}
+	</div>
+	<button type="button" onclick={handleLogout} class="big-button">Logout</button>
 </section>

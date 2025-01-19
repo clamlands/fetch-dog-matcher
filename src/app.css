@@ -13,14 +13,14 @@ body {
 	font-family: Nunito;
 	font-size: 18px;
 	--orange: #ffa900;
-	--background: #f9f7f2;
+	--background: rgb(169, 230, 239);
 	--purple: #7d1f70;
 	--input-background: #ffe8bb;
 	background-color: var(--background);
-	background-color: rgb(169, 230, 239);
 }
 
 .top-section {
+	text-align: center;
 	padding: 15px;
 	background: linear-gradient(
 		90deg,
@@ -30,14 +30,57 @@ body {
 	);
 }
 
+.bottom-section {
+	padding: 0 15px 15px 15px;
+}
+
+.login-section {
+	display: grid;
+	place-content: center;
+	height: 100vh;
+	text-align: center;
+	padding: 15px;
+	background: linear-gradient(
+		90deg,
+		rgba(255, 169, 0, 1) 0%,
+		rgba(255, 213, 0, 1) 50%,
+		rgba(255, 169, 0, 1) 100%
+	);
+}
+.login-inputs {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	justify-content: center;
+	align-items: center;
+	margin: 20px 0;
+}
+
+input[type='text'],
+input[type='email'] {
+	border-radius: 8px;
+	border: 2px solid var(--purple);
+	padding: 8px;
+	outline: none;
+}
+
+input[type='text']:focus,
+input[type='email']:focus {
+	border: 2px solid #c74db7;
+}
+
+.align-left {
+	text-align: left;
+}
+
 hr {
 	height: 1px;
-	margin: 15px 0;
+	margin: 30px 0;
 	border-color: var(--purple);
 }
 
-.bottom-section {
-	padding: 15px;
+.instructions {
+	margin: 20px 0;
 }
 
 img {
@@ -49,6 +92,11 @@ img {
 
 .dog-card {
 	margin-bottom: 50px;
+}
+
+.match-card {
+	text-align: center;
+	border: 2px solid red;
 }
 
 .breed-select {
@@ -79,9 +127,10 @@ select {
 	background-color: var(--input-background);
 	border: 2px solid var(--purple);
 	border-radius: 8px;
+	outline: none;
 }
 
-button {
+.big-button {
 	background-color: var(--orange);
 	border: none;
 	border-radius: 8px;
@@ -89,6 +138,60 @@ button {
 	margin: 15px 0;
 	font-weight: bold;
 	width: 100%;
+	font-size: 20px;
+}
+
+.favorites-button {
+	background-color: var(--orange);
+	border: none;
+	border-radius: 8px;
+	padding: 15px;
+	font-weight: bold;
+	font-size: 18px;
+}
+
+.grey-button {
+	background-color: #a3a3a3;
+}
+
+.page-numbers {
+	display: flex;
+	justify-content: center;
+	gap: 12px;
+	margin: 12px 0;
+}
+
+.page-number {
+	border: none;
+	font-weight: bold;
+	font-size: 20px;
+	background-color: var(--background);
+}
+
+.dog-card-fields {
+	display: flex;
+	width: 100%;
+	justify-content: space-between;
+}
+
+.dog-right {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	align-items: end;
+}
+
+.heart {
+	max-width: 40px;
+}
+
+.active {
+	color: var(--orange);
+	text-decoration: underline;
+}
+
+.margin-bottom-small {
+	margin-bottom: 20px;
 }
 
 /* Custom checkbox */
