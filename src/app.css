@@ -4,12 +4,47 @@
 	box-sizing: border-box;
 }
 
+@font-face {
+	font-family: Nunito;
+	src: url($lib/Nunito.woff2);
+}
+
 body {
+	font-family: Nunito;
+	font-size: 18px;
+	--orange: #ffa900;
+	--background: #f9f7f2;
+	--purple: #7d1f70;
+	--input-background: #ffe8bb;
+	background-color: var(--background);
+	background-color: rgb(169, 230, 239);
+}
+
+.top-section {
+	padding: 15px;
+	background: linear-gradient(
+		90deg,
+		rgba(255, 169, 0, 1) 0%,
+		rgba(255, 213, 0, 1) 50%,
+		rgba(255, 169, 0, 1) 100%
+	);
+}
+
+hr {
+	height: 1px;
+	margin: 15px 0;
+	border-color: var(--purple);
+}
+
+.bottom-section {
 	padding: 15px;
 }
+
 img {
 	width: 100%;
 	height: auto;
+	border-radius: 8px;
+	box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.25);
 }
 
 .dog-card {
@@ -19,10 +54,67 @@ img {
 .breed-select {
 	max-height: 300px;
 	overflow: auto;
+	border: 2px solid var(--purple);
+	padding: 4px 8px;
+	background-color: var(--input-background);
+	border-radius: 8px;
 }
 
 .breed-select label {
 	display: flex;
 	align-items: center;
 	gap: 10px;
+}
+
+.filter {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 15px;
+}
+
+select {
+	font-size: 18px;
+	padding: 5px;
+	background-color: var(--input-background);
+	border: 2px solid var(--purple);
+	border-radius: 8px;
+}
+
+button {
+	background-color: var(--orange);
+	border: none;
+	border-radius: 8px;
+	padding: 15px;
+	margin: 15px 0;
+	font-weight: bold;
+	width: 100%;
+}
+
+/* Custom checkbox */
+input[type='checkbox'] {
+	appearance: none;
+	background-color: var(--orange);
+	margin: 0;
+	width: 1.3em;
+	height: 1.3em;
+	border: 0.15em solid currentColor;
+	border-radius: 0.15em;
+	display: grid;
+	place-content: center;
+}
+
+input[type='checkbox']::before {
+	content: '';
+	width: 0.75em;
+	height: 0.75em;
+	transform: scale(0);
+	transition: 120ms transform ease-in-out;
+	background-color: black;
+	transform-origin: bottom left;
+	clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+}
+
+input[type='checkbox']:checked::before {
+	transform: scale(1);
 }
