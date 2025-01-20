@@ -33,8 +33,9 @@
 						email: loginEmail
 					})
 				});
+				console.log(response);
 				if (!response.ok) {
-					throw new Error(`Response status: ${response.status}`);
+					throw new Error(`Response status: ${response.status}. Error logging in.`);
 				}
 				if (response.ok) {
 					goto('/app');

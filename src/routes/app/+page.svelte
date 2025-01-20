@@ -26,13 +26,13 @@
 	//references to "Get Your Match!" button to be scrolled to
 	let scrollToMatchRef: HTMLElement;
 
+	onMount(() => {
+		getBreeds();
+	});
+
 	//Automatically update search results upon changing any sorting/filtering/breed selection
 	$effect(() => {
 		fetchDogIds();
-	});
-
-	onMount(() => {
-		getBreeds();
 	});
 
 	// Data models for Dog and Location objects return by the API
