@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import '../app.css';
 	import { goto } from '$app/navigation';
 
@@ -9,7 +9,7 @@
 	let loginAttempt = $state(false);
 
 	//check that the email is a valid email format
-	function validateEmail(email) {
+	function validateEmail(email: string) {
 		let re = /\S+@\S+\.\S+/;
 		let valid = re.test(email);
 		if (valid) {
@@ -22,19 +22,26 @@
 	//Login function
 	async function handleLogin() {
 		loginAttempt = true;
-		if (validateEmail(loginEmail)) {
-			const loginEndpoint = `${baseURL}/auth/login`;
-			const response = await fetch(loginEndpoint, {
-				method: 'POST',
-				credentials: 'include',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					name: loginName,
-					email: loginEmail
-				})
-			});
-			if (response.ok) {
+		try {
+			if (validateEmail(loginEmail)) {
+				const loginEndpoint = `${baseURL}/auth/login`;
+				const response = await fetch(loginEndpoint, {
+					method: 'POST',
+					credentials: 'include',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						name: loginName,
+						email: loginEmail
+					})
+				});
+				if (!response.ok) {
+					throw new Error(`Response status: ${response.status}`);
+				}
 				goto('/app');
+			}
+		} catch (error) {
+			if (error instanceof Error) {
+				console.error(error.message);
 			}
 		}
 	}

@@ -1,29 +1,29 @@
-<script>
+<script lang="ts">
 	import DogCard from './DogCard.svelte';
 	import '../../app.css';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 
 	const baseURL = 'https://frontend-take-home-service.fetch.com';
-	let dogIdsArray = $state([]);
+	let dogIdsArray: string[] = $state([]);
 	let dogObjectArray = $state([]);
 	let numberOfPages = $derived(Math.ceil(dogObjectArray.length / 25));
 	let currentPage = $state(1);
-	let currentPageDogObjectArray = $derived(
+	let currentPageDogObjectArray: Dog[] = $derived(
 		dogObjectArray.slice((currentPage - 1) * 25, currentPage * 25 + 1)
 	);
-	const breedsArray = $state([]);
-	let selectedBreed = $state([]);
+	const breedsArray: string[] = $state([]);
+	let selectedBreed: string[] = $state([]);
 	let searchSort = $state('breed-asc');
 	let ageMin = $state(0);
 	let ageMax = $state(20);
-	let favoritesArray = $state([]);
-	let matchObject = $state();
-	let matchLocationObject = $state('');
-	// let cityName = $state('Chicago');
-	// let zipCodesArray = [];
-	//reference to "Get Your Match!" button to be scrolled to
-	let scrollToMatchRef;
+	let favoritesArray: string[] = $state([]);
+	let matchObject: Dog | undefined = $state();
+	let matchLocationObject: Location | undefined = $state();
+	let favoritesFlag: boolean = $state(false);
+
+	//references to "Get Your Match!" button to be scrolled to
+	let scrollToMatchRef: HTMLElement;
 
 	//Automatically update search results upon changing any sorting/filtering/breed selection
 	$effect(() => {
@@ -34,26 +34,61 @@
 		getBreeds();
 	});
 
+	// Data models for Dog and Location objects return by the API
+	interface Dog {
+		id: string;
+		img: string;
+		name: string;
+		age: number;
+		zip_code: string;
+		breed: string;
+	}
+
+	interface Location {
+		zip_code: string;
+		latitude: number;
+		longitude: number;
+		city: string;
+		state: string;
+		county: string;
+	}
+
 	//Logout function
 	async function handleLogout() {
 		const loginEndpoint = `${baseURL}/auth/logout`;
-		const response = await fetch(loginEndpoint, {
-			method: 'POST',
-			credentials: 'include'
-		});
-		if (response.ok) {
+		try {
+			const response = await fetch(loginEndpoint, {
+				method: 'POST',
+				credentials: 'include'
+			});
+			if (!response.ok) {
+				throw new Error('Error getting Match Id');
+			}
 			goto('./');
+		} catch (error) {
+			if (error instanceof Error) {
+				console.error(error.message);
+			}
 		}
 	}
 
 	//Get dog breeds
 	async function getBreeds() {
 		const loginEndpoint = `${baseURL}/dogs/breeds`;
-		const response = await fetch(loginEndpoint, {
-			credentials: 'include'
-		});
-		const json = await response.json();
-		breedsArray.push(...json);
+		try {
+			const response = await fetch(loginEndpoint, {
+				credentials: 'include'
+			});
+			if (!response.ok) {
+				throw new Error('Error getting Match Id');
+			}
+			const json = await response.json();
+			breedsArray.push(...json);
+		} catch (error) {
+			if (error instanceof Error) {
+				console.error(error.message);
+			}
+		}
 	}
 
 	//
@@ -69,17 +104,6 @@
 				endpoint = endpoint + `&breeds[${i}]=${breed}`;
 			});
 		}
-
-		// getCityZipCodes(cityName);
-		// console.log(zipCodesArray);
-		// //adds endpoints for zipcode filter
-		// if (zipCodesArray.length > 0) {
-		// 	zipCodesArray.forEach((zipCode, i) => {
-		// 		endpoint = endpoint + `&zipCodes[${i}]=${zipCode}`;
-		// 	});
-		// }
-		// // endpoint = endpoint + '&zipCodes[0]=60634';
-		// console.log(endpoint);
 		return endpoint;
 	}
 
@@ -98,82 +122,68 @@
 		} else return '?sort=age:desc';
 	}
 
-	// async function getCityZipCodes(passedCity) {
-	// 	const endpoint = `${baseURL}/locations/search`;
-	// 	const response = await fetch(endpoint, {
-	// 		credentials: 'include',
-	// 		method: 'POST',
-	// 		headers: { 'Content-Type': 'application/json' },
-	// 		body: JSON.stringify({
-	// 			city: passedCity,
-	// 			size: 100
-	// 		})
-	// 	});
-	// 	const json = await response.json();
-	// 	const objectArray = json.results;
-	// 	const tempZipCodesArray = [];
-	// 	//extract the zip codes from each object returned in the array, and push them to a separate array
-	// 	objectArray.forEach((obj) => {
-	// 		tempZipCodesArray.push(obj.zip_code);
-	// 	});
-	// 	console.log(tempZipCodesArray);
-	// 	console.log(objectArray);
-	// 	// zipCodesArray.push(...tempZipCodesArray);
-	// 	zipCodesArray = tempZipCodesArray;
-	// }
-
 	//Search for dogs
 	async function fetchDogIds() {
 		const tempDogIdsArray = [];
 		let endpoint = getDogSearchEndpoints();
-		console.log(endpoint);
 		let nextExists;
 		do {
 			if (tempDogIdsArray.length >= 100) {
 				break;
 			}
-			const response = await fetch(`${baseURL}${endpoint}`, {
-				credentials: 'include'
-			});
-			const json = await response.json();
-			if ('next' in json) {
-				nextExists = true;
-			} else {
-				nextExists = false;
+			try {
+				const response = await fetch(`${baseURL}${endpoint}`, {
+					credentials: 'include'
+				});
+				if (!response.ok) {
+					throw new Error('Error getting Match Id');
+				}
+				const json = await response.json();
+				if ('next' in json) {
+					nextExists = true;
+				} else {
+					nextExists = false;
+				}
+				//update the endpoint to get next 25 results
+				endpoint = json.next;
+				tempDogIdsArray.push(...json.resultIds);
+			} catch (error) {
+				if (error instanceof Error) {
+					console.error(error.message);
+				}
 			}
-			//update the endpoint to get next 25 results
-			endpoint = json.next;
-			tempDogIdsArray.push(...json.resultIds);
 		} while (nextExists);
 
-		// const response = await fetch(endpoint, {
-		// 	credentials: 'include'
-		// });
-		// const json = await response.json();
-
-		// console.log(json);
-		// dogIdsArray.push(json.resultIds);
 		//Now that array of IDs is fetched, fetch dog objects
 		dogIdsArray.push(...tempDogIdsArray);
 		fetchDogs(tempDogIdsArray);
 	}
 
 	//POST request to fetch dog objects
-	async function fetchDogs(dogIdsArray) {
-		const endpoint = `${baseURL}/dogs`;
-		const response = await fetch(endpoint, {
-			credentials: 'include',
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(dogIdsArray)
-		});
-		const json = await response.json();
-		dogObjectArray = json;
+	async function fetchDogs(dogIdsArray: string[]) {
+		try {
+			const endpoint = `${baseURL}/dogs`;
+			const response = await fetch(endpoint, {
+				credentials: 'include',
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(dogIdsArray)
+			});
+			if (!response.ok) {
+				throw new Error('Error getting Match Id');
+			}
+			const json = await response.json();
+			dogObjectArray = json;
+		} catch (error) {
+			if (error instanceof Error) {
+				console.error(error.message);
+			}
+		}
 	}
 
 	//Add breed of the respective check box to the state array
 	//If the breed is already in the array, remove it
-	function handleBreedCheckbox(breed) {
+	function handleBreedCheckbox(breed: string) {
 		if (selectedBreed.includes(breed)) {
 			selectedBreed = selectedBreed.filter((item) => item !== breed);
 		} else {
@@ -182,7 +192,7 @@
 	}
 
 	//Checks the Id of each dog card with the favoritesArray to display whether it is favorited
-	function toggleFavorites(id) {
+	function toggleFavorites(id: string) {
 		if (favoritesArray.includes(id)) {
 			favoritesArray = favoritesArray.filter((item) => item !== id);
 		} else {
@@ -193,49 +203,72 @@
 	//submits the favorited dogs to get the ID for the dog match
 	async function getMatchId() {
 		const endpoint = `${baseURL}/dogs/match`;
-		const response = await fetch(endpoint, {
-			credentials: 'include',
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(favoritesArray)
-		});
-		const json = await response.json();
-		const matchId = json.match;
-		console.log(matchId);
+		try {
+			const response = await fetch(endpoint, {
+				credentials: 'include',
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(favoritesArray)
+			});
+			if (!response.ok) {
+				throw new Error('Error getting Match Id');
+			}
+			const json = await response.json();
+			const matchId = json.match;
 
-		fetchMatchObject([matchId]);
+			fetchMatchObject([matchId]);
+		} catch (error) {
+			if (error instanceof Error) {
+				console.error(error.message);
+			}
+			favoritesFlag = true;
+		}
 	}
 
 	//
-	async function getMatchLocationObject(matchZip) {
-		console.log(matchZip);
+	async function getMatchLocationObject(matchZip: string) {
 		const endpoint = `${baseURL}/locations`;
-		const response = await fetch(endpoint, {
-			credentials: 'include',
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify([matchZip])
-		});
-		const json = await response.json();
-		console.log(json[0].city);
-		matchLocationObject = json[0];
-		console.log(matchLocationObject.city);
+		try {
+			const response = await fetch(endpoint, {
+				credentials: 'include',
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify([matchZip])
+			});
+			if (!response.ok) {
+				throw new Error('Error getting Match Id');
+			}
+			const json = await response.json();
+			matchLocationObject = json[0];
+		} catch (error) {
+			if (error instanceof Error) {
+				console.error(error.message);
+			}
+		}
 	}
 
 	//POST request to fetch dog objects
-	async function fetchMatchObject(matchId) {
+	async function fetchMatchObject(matchId: string[]) {
 		const endpoint = `${baseURL}/dogs`;
-		const response = await fetch(endpoint, {
-			credentials: 'include',
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(matchId)
-		});
-		console.log(response);
-
-		const json = await response.json();
-		getMatchLocationObject(json[0].zip_code);
-		matchObject = json[0];
+		try {
+			const response = await fetch(endpoint, {
+				credentials: 'include',
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(matchId)
+			});
+			if (!response.ok) {
+				throw new Error(`Response status: ${response.status}`);
+			}
+			const json = await response.json();
+			getMatchLocationObject(json[0].zip_code);
+			favoritesFlag = false;
+			matchObject = json[0];
+		} catch (error) {
+			if (error instanceof Error) {
+				console.error(error.message);
+			}
+		}
 	}
 </script>
 
@@ -243,10 +276,11 @@
 	<section>
 		<h1>Fetch Dog Matcher</h1>
 		<div>Find the right dog for you!</div>
-		<p class="instructions">
-			Choose your favorite breeds and filter your search by age and location.
-		</p>
 		<hr />
+		<p class="instructions">
+			1. Choose your favorite breeds, select your Age Range, and sort your search.
+		</p>
+
 		<div class="filters-container">
 			<div>
 				<div class="align-left">Select Breeds:</div>
@@ -265,6 +299,28 @@
 				</div>
 			</div>
 			<div>
+				<div class="filter">
+					Age Range:
+					<div class="ages">
+						<label>
+							Min:
+							<select name="Minimum Age" bind:value={ageMin}>
+								{#each { length: 21 }, index}
+									<option value={index}>{index}</option>
+								{/each}
+							</select>
+						</label>
+
+						<label>
+							Max:
+							<select name="Maximum Age" bind:value={ageMax}>
+								{#each { length: 21 }, index}
+									<option value={index}>{index}</option>
+								{/each}
+							</select>
+						</label>
+					</div>
+				</div>
 				<label class="filter">
 					Sort by:
 					<select name="Breed Sort" bind:value={searchSort}>
@@ -276,39 +332,14 @@
 						<option value="age-desc">Age - Old to Young</option>
 					</select>
 				</label>
-
-				<div class="filter">
-					Age Range:
-					<label>
-						Min:
-						<select name="Minimum Age" bind:value={ageMin}>
-							{#each { length: 21 }, index}
-								<option value={index}>{index}</option>
-							{/each}
-						</select>
-					</label>
-
-					<label>
-						Max:
-						<select name="Maximum Age" bind:value={ageMax}>
-							{#each { length: 21 }, index}
-								<option value={index}>{index}</option>
-							{/each}
-						</select>
-					</label>
-				</div>
 			</div>
 		</div>
-
-		<!-- <div class="filter">
-                City:
-                <label>
-                    <input type="text" bind:value={cityName} />
-                </label>
-            </div> -->
 		<p class="instructions">
-			As you search, click the "Add to favorites" button for the dogs you love most. Once you're
-			finished, click the "Get Your Match!" button, and we'll pick the best dog for you.
+			2. As you search, click the "Favorite" button for the dogs you love most.
+		</p>
+		<p class="instructions">
+			3. Once you're finished, click the "Get Your Match!" button, and we'll pick the best dog for
+			you.
 		</p>
 	</section>
 </div>
@@ -319,10 +350,41 @@
 			bind:this={scrollToMatchRef}
 			onclick={() => {
 				getMatchId();
-				scrollToMatchRef.scrollIntoView({ alignToTop: 'true', behavior: 'smooth' });
+				scrollToMatchRef.scrollIntoView({ behavior: 'smooth' });
 			}}
-			class="big-button">Get Your Match!</button
+			class="big-button narrow-button">Get Your Match!</button
 		>
+		{#if favoritesFlag}
+			<div class="warning">No match. Be sure you selected your favorites!</div>
+		{/if}
+
+		{#if matchObject}
+			<div class="match-container">
+				<div class="dog-card match-card">
+					<h1 class="margin-bottom-small">You've been matched with {matchObject.name}!</h1>
+					<img src={matchObject.img} alt="Dog match" />
+					<div>Name: {matchObject.name}</div>
+					<div>Age: {matchObject.age}</div>
+					<div>Breed: {matchObject.breed}</div>
+					<div class="margin-bottom-small">Zipcode: {matchObject.zip_code}</div>
+					<div>
+						{#if matchLocationObject}
+							Congratulations on your match. {matchObject.name}
+							{#if matchObject.age <= 2}
+								is a nice lil' pup from {matchLocationObject.city}, {matchLocationObject.state} with
+								a full life to live.
+							{:else if matchObject.age > 2 && matchObject.age <= 10}
+								is an adolescent doggy from {matchLocationObject.city}, {matchLocationObject.state} with
+								lots of energy.
+							{:else}
+								from {matchLocationObject.city}, {matchLocationObject.state} is happy to have a cozy
+								place to spend retirement.
+							{/if}
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/if}
 		<div class="page-numbers">
 			{#each { length: numberOfPages }, index}
 				<button
@@ -334,31 +396,6 @@
 				>
 			{/each}
 		</div>
-		{#if matchObject}
-			<div class="match-container">
-				<div class="dog-card match-card">
-					<h1>You've been matched with {matchObject.name}!</h1>
-					<img src={matchObject.img} alt="Dog match" />
-					<div>Name: {matchObject.name}</div>
-					<div>Age: {matchObject.age}</div>
-					<div>Breed: {matchObject.breed}</div>
-					<div>Zipcode: {matchObject.zip_code}</div>
-					<div>
-						Congratulations on your match. {matchObject.name}
-						{#if matchObject.age <= 2}
-							is a nice lil' pup from {matchLocationObject.city}, {matchLocationObject.state} with a
-							full life to live.
-						{:else if matchObject.age > 2 && matchObject.age <= 10}
-							is an adolescent doggy from {matchLocationObject.city}, {matchLocationObject.state} with
-							lots of energy.
-						{:else}
-							from {matchLocationObject.city}, {matchLocationObject.state} is happy to have a cozy place
-							to spend retirement.
-						{/if}
-					</div>
-				</div>
-			</div>
-		{/if}
 		<div class="dog-cards">
 			<!-- Create a dog card for each object returned by the search results -->
 			{#each currentPageDogObjectArray as dog}
@@ -379,12 +416,13 @@
 				<button
 					onclick={() => {
 						currentPage = index + 1;
+						scrollToMatchRef.scrollIntoView({ behavior: 'smooth' });
 					}}
 					class={index + 1 === currentPage ? 'page-number active' : 'page-number'}
 					>{index + 1}</button
 				>
 			{/each}
 		</div>
-		<button type="button" onclick={handleLogout} class="big-button">Logout</button>
+		<button type="button" onclick={handleLogout} class="big-button narrow-button">Logout</button>
 	</section>
 </div>
