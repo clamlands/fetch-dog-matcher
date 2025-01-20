@@ -15,7 +15,6 @@
 		if (valid) {
 			validEmail = true;
 		}
-		console.log(valid);
 		return valid;
 	}
 
@@ -37,7 +36,9 @@
 				if (!response.ok) {
 					throw new Error(`Response status: ${response.status}`);
 				}
-				goto('/app');
+				if (response.ok) {
+					goto('/app');
+				}
 			}
 		} catch (error) {
 			if (error instanceof Error) {

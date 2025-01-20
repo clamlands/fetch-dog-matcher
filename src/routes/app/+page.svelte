@@ -9,6 +9,7 @@
 	let dogObjectArray = $state([]);
 	let numberOfPages = $derived(Math.ceil(dogObjectArray.length / 25));
 	let currentPage = $state(1);
+	//display only 25 results per page
 	let currentPageDogObjectArray: Dog[] = $derived(
 		dogObjectArray.slice((currentPage - 1) * 25, currentPage * 25 + 1)
 	);
@@ -91,14 +92,10 @@
 		}
 	}
 
-	//
 	function getDogSearchEndpoints() {
-		//square bracket notation
-		//https://frontend-take-home-service.fetch.com/dogs/search?breeds[]=Basset&breeds[]=Beagle
-
 		let endpoint = `/dogs/search${getSearchSortEndpoints()}&ageMin=${ageMin}&ageMax=${ageMax}`;
 
-		//adds endpoints for all breed selections
+		//Add endpoints for selected breeds with square bracket notation
 		if (Array.isArray(selectedBreed)) {
 			selectedBreed.forEach((breed, i) => {
 				endpoint = endpoint + `&breeds[${i}]=${breed}`;
@@ -107,7 +104,7 @@
 		return endpoint;
 	}
 
-	//handles logic for deciding what search sort endpoint is to be used
+	//handles logic for deciding what search sort endpoint to use
 	function getSearchSortEndpoints() {
 		if (searchSort === 'breed-asc') {
 			return '?sort=breed:asc';
@@ -122,11 +119,12 @@
 		} else return '?sort=age:desc';
 	}
 
-	//Search for dogs
+	//Search for dogs and get their Ids
 	async function fetchDogIds() {
 		const tempDogIdsArray = [];
 		let endpoint = getDogSearchEndpoints();
 		let nextExists;
+		//pagination loop
 		do {
 			if (tempDogIdsArray.length >= 100) {
 				break;
@@ -139,6 +137,7 @@
 					throw new Error('Error getting Match Id');
 				}
 				const json = await response.json();
+				//check if there are more results
 				if ('next' in json) {
 					nextExists = true;
 				} else {
@@ -154,8 +153,8 @@
 			}
 		} while (nextExists);
 
-		//Now that array of IDs is fetched, fetch dog objects
 		dogIdsArray.push(...tempDogIdsArray);
+		//Now that array of IDs is fetched, fetch dog objects
 		fetchDogs(tempDogIdsArray);
 	}
 
@@ -181,7 +180,7 @@
 		}
 	}
 
-	//Add breed of the respective check box to the state array
+	//Add breed of the respective check box to the state array.
 	//If the breed is already in the array, remove it
 	function handleBreedCheckbox(breed: string) {
 		if (selectedBreed.includes(breed)) {
@@ -215,7 +214,7 @@
 			}
 			const json = await response.json();
 			const matchId = json.match;
-
+			//pass the Id that was fetched to then get the dog object
 			fetchMatchObject([matchId]);
 		} catch (error) {
 			if (error instanceof Error) {
@@ -225,7 +224,7 @@
 		}
 	}
 
-	//
+	//used to get the city and state for the dog match
 	async function getMatchLocationObject(matchZip: string) {
 		const endpoint = `${baseURL}/locations`;
 		try {
@@ -345,6 +344,7 @@
 </div>
 <div class="bottom-section" bind:this={scrollToMatchRef}>
 	<section>
+		<!-- If a match has already been made, the button text changes to "Get New Match?" -->
 		{#if !matchObject}
 			<button
 				type="button"
@@ -379,6 +379,7 @@
 					<div>Breed: {matchObject.breed}</div>
 					<div class="margin-bottom-small">Zipcode: {matchObject.zip_code}</div>
 					<div>
+						<!-- Give different match messages based on the dog's age -->
 						{#if matchLocationObject}
 							Congratulations on your match. {matchObject.name}
 							{#if matchObject.age <= 2}
