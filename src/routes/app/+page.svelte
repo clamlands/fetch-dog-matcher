@@ -343,17 +343,28 @@
 		</p>
 	</section>
 </div>
-<div class="bottom-section">
+<div class="bottom-section" bind:this={scrollToMatchRef}>
 	<section>
-		<button
-			type="button"
-			bind:this={scrollToMatchRef}
-			onclick={() => {
-				getMatchId();
-				scrollToMatchRef.scrollIntoView({ behavior: 'smooth' });
-			}}
-			class="big-button narrow-button">Get Your Match!</button
-		>
+		{#if !matchObject}
+			<button
+				type="button"
+				onclick={() => {
+					getMatchId();
+					scrollToMatchRef.scrollIntoView({ behavior: 'smooth' });
+				}}
+				class="big-button narrow-button">Get Your Match!</button
+			>
+		{:else}
+			<button
+				type="button"
+				onclick={() => {
+					getMatchId();
+					scrollToMatchRef.scrollIntoView({ behavior: 'smooth' });
+				}}
+				class="big-button narrow-button">Get New Match?</button
+			>
+		{/if}
+
 		{#if favoritesFlag}
 			<div class="warning">No match. Be sure you selected your favorites!</div>
 		{/if}

@@ -169,6 +169,10 @@ select {
 	font-size: 20px;
 }
 
+.match-container {
+	margin-top: 100px;
+}
+
 .favorites-button {
 	background-color: var(--orange);
 	border: none;
@@ -257,6 +261,12 @@ input[type='checkbox']:checked::before {
 	font-weight: bold;
 }
 
+.bottom-section section {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
 /*----------DESKTOP----------*/
 @media (min-width: 768px) {
 	.top-section,
@@ -279,12 +289,6 @@ input[type='checkbox']:checked::before {
 
 	.instructions {
 		text-align: start;
-	}
-
-	.bottom-section section {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
 	}
 
 	.narrow-button {
