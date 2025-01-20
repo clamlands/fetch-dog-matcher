@@ -3,8 +3,8 @@
 	import { goto } from '$app/navigation';
 
 	const baseURL = 'https://frontend-take-home-service.fetch.com';
-	let loginName = 'Noah';
-	let loginEmail = 'noah.mailloux1@gmail.com';
+	let loginName = $state('John Doe');
+	let loginEmail = $state('john@doemail.com');
 	let validEmail = $state(false);
 	let loginAttempt = $state(false);
 

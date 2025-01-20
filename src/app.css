@@ -9,6 +9,15 @@
 	src: url($lib/Nunito.woff2);
 }
 
+@keyframes fadeInAnimation {
+	0% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
+}
+
 body {
 	font-family: Nunito;
 	font-size: 18px;
@@ -32,6 +41,12 @@ body {
 
 .bottom-section {
 	padding: 0 15px 15px 15px;
+	background: linear-gradient(
+		90deg,
+		rgba(119, 193, 204, 1) 0%,
+		rgba(169, 230, 239, 1) 50%,
+		rgba(119, 193, 204, 1) 100%
+	);
 }
 
 .login-section {
@@ -62,6 +77,8 @@ input[type='email'] {
 	border: 2px solid var(--purple);
 	padding: 8px;
 	outline: none;
+	background-color: var(--input-background);
+	font-size: 18px;
 }
 
 input[type='text']:focus,
@@ -96,7 +113,11 @@ img {
 
 .match-card {
 	text-align: center;
-	border: 2px solid red;
+	animation: 1s linear fadeInAnimation;
+	background-color: var(--orange);
+	box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.25);
+	border-radius: 8px;
+	padding: 8px;
 }
 
 .breed-select {
@@ -165,7 +186,7 @@ select {
 	border: none;
 	font-weight: bold;
 	font-size: 20px;
-	background-color: var(--background);
+	background-color: transparent;
 }
 
 .dog-card-fields {
@@ -220,4 +241,49 @@ input[type='checkbox']::before {
 
 input[type='checkbox']:checked::before {
 	transform: scale(1);
+}
+
+/*----------DESKTOP----------*/
+@media (min-width: 768px) {
+	.top-section,
+	.bottom-section {
+		width: 100%;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+	}
+
+	.top-section section,
+	.bottom-section section {
+		max-width: 1200px;
+		width: 100%;
+	}
+
+	.dog-cards {
+		width: 100%;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		grid-auto-rows: max-content;
+		gap: 40px;
+	}
+
+	.match-container {
+		width: 100%;
+		display: flex;
+		justify-content: center;
+	}
+	.match-card {
+		max-width: 300px;
+	}
+
+	.filters-container {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.filter {
+		flex-direction: column;
+		align-items: start;
+	}
 }

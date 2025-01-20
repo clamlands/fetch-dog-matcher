@@ -9,7 +9,7 @@
 			<div>Name: {name}</div>
 			<div>Age: {age}</div>
 			<div>Breed: {breed}</div>
-			<div>Zipcode: {zip_code}</div>
+			<div>ZIP Code: {zip_code}</div>
 		</div>
 		<div class="dog-right">
 			{#if favoritesArray.includes(id)}

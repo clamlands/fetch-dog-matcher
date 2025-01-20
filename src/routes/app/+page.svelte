@@ -12,7 +12,6 @@
 	let currentPageDogObjectArray = $derived(
 		dogObjectArray.slice((currentPage - 1) * 25, currentPage * 25 + 1)
 	);
-	// let currentPageDogObjectArray = $derived(dogObjectArray);
 	const breedsArray = $state([]);
 	let selectedBreed = $state([]);
 	let searchSort = $state('breed-asc');
@@ -20,8 +19,13 @@
 	let ageMax = $state(20);
 	let favoritesArray = $state([]);
 	let matchObject = $state();
+	let matchLocationObject = $state('');
+	// let cityName = $state('Chicago');
+	// let zipCodesArray = [];
+	//reference to "Get Your Match!" button to be scrolled to
+	let scrollToMatchRef;
 
-	//Automatically update search results upon changing any sorting or breed selection
+	//Automatically update search results upon changing any sorting/filtering/breed selection
 	$effect(() => {
 		fetchDogIds();
 	});
@@ -61,10 +65,21 @@
 
 		//adds endpoints for all breed selections
 		if (Array.isArray(selectedBreed)) {
-			selectedBreed.forEach((breed) => {
-				endpoint = endpoint + `&breeds[]=${breed}`;
+			selectedBreed.forEach((breed, i) => {
+				endpoint = endpoint + `&breeds[${i}]=${breed}`;
 			});
 		}
+
+		// getCityZipCodes(cityName);
+		// console.log(zipCodesArray);
+		// //adds endpoints for zipcode filter
+		// if (zipCodesArray.length > 0) {
+		// 	zipCodesArray.forEach((zipCode, i) => {
+		// 		endpoint = endpoint + `&zipCodes[${i}]=${zipCode}`;
+		// 	});
+		// }
+		// // endpoint = endpoint + '&zipCodes[0]=60634';
+		// console.log(endpoint);
 		return endpoint;
 	}
 
@@ -83,10 +98,35 @@
 		} else return '?sort=age:desc';
 	}
 
+	// async function getCityZipCodes(passedCity) {
+	// 	const endpoint = `${baseURL}/locations/search`;
+	// 	const response = await fetch(endpoint, {
+	// 		credentials: 'include',
+	// 		method: 'POST',
+	// 		headers: { 'Content-Type': 'application/json' },
+	// 		body: JSON.stringify({
+	// 			city: passedCity,
+	// 			size: 100
+	// 		})
+	// 	});
+	// 	const json = await response.json();
+	// 	const objectArray = json.results;
+	// 	const tempZipCodesArray = [];
+	// 	//extract the zip codes from each object returned in the array, and push them to a separate array
+	// 	objectArray.forEach((obj) => {
+	// 		tempZipCodesArray.push(obj.zip_code);
+	// 	});
+	// 	console.log(tempZipCodesArray);
+	// 	console.log(objectArray);
+	// 	// zipCodesArray.push(...tempZipCodesArray);
+	// 	zipCodesArray = tempZipCodesArray;
+	// }
+
 	//Search for dogs
 	async function fetchDogIds() {
 		const tempDogIdsArray = [];
 		let endpoint = getDogSearchEndpoints();
+		console.log(endpoint);
 		let nextExists;
 		do {
 			if (tempDogIdsArray.length >= 100) {
@@ -131,6 +171,8 @@
 		dogObjectArray = json;
 	}
 
+	//Add breed of the respective check box to the state array
+	//If the breed is already in the array, remove it
 	function handleBreedCheckbox(breed) {
 		if (selectedBreed.includes(breed)) {
 			selectedBreed = selectedBreed.filter((item) => item !== breed);
@@ -159,7 +201,25 @@
 		});
 		const json = await response.json();
 		const matchId = json.match;
+		console.log(matchId);
+
 		fetchMatchObject([matchId]);
+	}
+
+	//
+	async function getMatchLocationObject(matchZip) {
+		console.log(matchZip);
+		const endpoint = `${baseURL}/locations`;
+		const response = await fetch(endpoint, {
+			credentials: 'include',
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify([matchZip])
+		});
+		const json = await response.json();
+		console.log(json[0].city);
+		matchLocationObject = json[0];
+		console.log(matchLocationObject.city);
 	}
 
 	//POST request to fetch dog objects
@@ -171,117 +231,160 @@
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify(matchId)
 		});
+		console.log(response);
+
 		const json = await response.json();
+		getMatchLocationObject(json[0].zip_code);
 		matchObject = json[0];
 	}
 </script>
 
-<section class="top-section">
-	<h1>Fetch Dog Matcher</h1>
-	<div>Find the right dog for you!</div>
-	<p class="instructions">
-		Choose your favorite breeds and filter your search by age and location.
-	</p>
-	<hr />
-	<div class="align-left">Select Breeds:</div>
-	<div class="breed-select margin-bottom-small">
-		{#each breedsArray as breed}
-			<label class="breeds">
-				<input
-					type="checkbox"
-					name={breed}
-					value={breed}
-					onclick={() => handleBreedCheckbox(breed)}
-				/>
-				{breed}
-			</label>
-		{/each}
-	</div>
-	<label class="filter">
-		Sort by:
-		<select name="Breed Sort" bind:value={searchSort}>
-			<option value="breed-asc">Breed - A to Z</option>
-			<option value="breed-desc">Breed - Z to A</option>
-			<option value="name-asc">Name - A to Z</option>
-			<option value="name-desc">Name - Z to A</option>
-			<option value="age-asc">Age - Young to Old</option>
-			<option value="age-desc">Age - Old to Young</option>
-		</select>
-	</label>
+<div class="top-section">
+	<section>
+		<h1>Fetch Dog Matcher</h1>
+		<div>Find the right dog for you!</div>
+		<p class="instructions">
+			Choose your favorite breeds and filter your search by age and location.
+		</p>
+		<hr />
+		<div class="filters-container">
+			<div>
+				<div class="align-left">Select Breeds:</div>
+				<div class="breed-select margin-bottom-small">
+					{#each breedsArray as breed}
+						<label class="breeds">
+							<input
+								type="checkbox"
+								name={breed}
+								value={breed}
+								onclick={() => handleBreedCheckbox(breed)}
+							/>
+							{breed}
+						</label>
+					{/each}
+				</div>
+			</div>
+			<div>
+				<label class="filter">
+					Sort by:
+					<select name="Breed Sort" bind:value={searchSort}>
+						<option value="breed-asc">Breed - A to Z</option>
+						<option value="breed-desc">Breed - Z to A</option>
+						<option value="name-asc">Name - A to Z</option>
+						<option value="name-desc">Name - Z to A</option>
+						<option value="age-asc">Age - Young to Old</option>
+						<option value="age-desc">Age - Old to Young</option>
+					</select>
+				</label>
 
-	<div class="filter">
-		Age Range:
-		<label>
-			Min
-			<select name="Minimum Age" bind:value={ageMin}>
-				{#each { length: 21 }, index}
-					<option value={index}>{index}</option>
-				{/each}
-			</select>
-		</label>
+				<div class="filter">
+					Age Range:
+					<label>
+						Min:
+						<select name="Minimum Age" bind:value={ageMin}>
+							{#each { length: 21 }, index}
+								<option value={index}>{index}</option>
+							{/each}
+						</select>
+					</label>
 
-		<label>
-			Max
-			<select name="Maximum Age" bind:value={ageMax}>
-				{#each { length: 21 }, index}
-					<option value={index}>{index}</option>
-				{/each}
-			</select>
-		</label>
-	</div>
-	<p class="instructions">
-		As you search, click the images of the dogs you love most, and they will be added to your
-		favorites. Once you're finished, click the "Get Your Match!" button and we'll pick the best dog
-		for you.
-	</p>
-</section>
-
-<section class="bottom-section">
-	<button type="button" onclick={getMatchId} class="big-button">Get Your Match!</button>
-	<div class="page-numbers">
-		{#each { length: numberOfPages }, index}
-			<button
-				onclick={() => {
-					currentPage = index + 1;
-				}}
-				class={index + 1 === currentPage ? 'page-number active' : 'page-number'}>{index + 1}</button
-			>
-		{/each}
-	</div>
-	{#if matchObject}
-		<div class="dog-card match-card">
-			<h1>YOUR MATCH!!!</h1>
-			<img src={matchObject.img} alt="Dog match" />
-			<div>Name: {matchObject.name}</div>
-			<div>Age: {matchObject.age}</div>
-			<div>Breed: {matchObject.breed}</div>
-			<div>Zipcode {matchObject.zip_code}</div>
+					<label>
+						Max:
+						<select name="Maximum Age" bind:value={ageMax}>
+							{#each { length: 21 }, index}
+								<option value={index}>{index}</option>
+							{/each}
+						</select>
+					</label>
+				</div>
+			</div>
 		</div>
-	{/if}
-	<div class="dog-cards">
-		<!-- Create a dog card for each object returned by the search results -->
-		{#each currentPageDogObjectArray as dog}
-			<DogCard
-				id={dog.id}
-				img={dog.img}
-				name={dog.name}
-				age={dog.age}
-				zip_code={dog.zip_code}
-				breed={dog.breed}
-				{favoritesArray}
-				{toggleFavorites}
-			/>
-		{/each}
-	</div>
-	<div class="page-numbers">
-		{#each { length: numberOfPages }, index}
-			<button
-				onclick={() => {
-					currentPage = index + 1;
-				}}
-				class={index + 1 === currentPage ? 'page-number active' : 'page-number'}>{index + 1}</button
-			>
-		{/each}
-	</div>
-	<button type="button" onclick={handleLogout} class="big-button">Logout</button>
-</section>
+
+		<!-- <div class="filter">
+                City:
+                <label>
+                    <input type="text" bind:value={cityName} />
+                </label>
+            </div> -->
+		<p class="instructions">
+			As you search, click the "Add to favorites" button for the dogs you love most. Once you're
+			finished, click the "Get Your Match!" button, and we'll pick the best dog for you.
+		</p>
+	</section>
+</div>
+<div class="bottom-section">
+	<section>
+		<button
+			type="button"
+			bind:this={scrollToMatchRef}
+			onclick={() => {
+				getMatchId();
+				scrollToMatchRef.scrollIntoView({ alignToTop: 'true', behavior: 'smooth' });
+			}}
+			class="big-button">Get Your Match!</button
+		>
+		<div class="page-numbers">
+			{#each { length: numberOfPages }, index}
+				<button
+					onclick={() => {
+						currentPage = index + 1;
+					}}
+					class={index + 1 === currentPage ? 'page-number active' : 'page-number'}
+					>{index + 1}</button
+				>
+			{/each}
+		</div>
+		{#if matchObject}
+			<div class="match-container">
+				<div class="dog-card match-card">
+					<h1>You've been matched with {matchObject.name}!</h1>
+					<img src={matchObject.img} alt="Dog match" />
+					<div>Name: {matchObject.name}</div>
+					<div>Age: {matchObject.age}</div>
+					<div>Breed: {matchObject.breed}</div>
+					<div>Zipcode: {matchObject.zip_code}</div>
+					<div>
+						Congratulations on your match. {matchObject.name}
+						{#if matchObject.age <= 2}
+							is a nice lil' pup from {matchLocationObject.city}, {matchLocationObject.state} with a
+							full life to live.
+						{:else if matchObject.age > 2 && matchObject.age <= 10}
+							is an adolescent doggy from {matchLocationObject.city}, {matchLocationObject.state} with
+							lots of energy.
+						{:else}
+							from {matchLocationObject.city}, {matchLocationObject.state} is happy to have a cozy place
+							to spend retirement.
+						{/if}
+					</div>
+				</div>
+			</div>
+		{/if}
+		<div class="dog-cards">
+			<!-- Create a dog card for each object returned by the search results -->
+			{#each currentPageDogObjectArray as dog}
+				<DogCard
+					id={dog.id}
+					img={dog.img}
+					name={dog.name}
+					age={dog.age}
+					zip_code={dog.zip_code}
+					breed={dog.breed}
+					{favoritesArray}
+					{toggleFavorites}
+				/>
+			{/each}
+		</div>
+		<div class="page-numbers">
+			{#each { length: numberOfPages }, index}
+				<button
+					onclick={() => {
+						currentPage = index + 1;
+					}}
+					class={index + 1 === currentPage ? 'page-number active' : 'page-number'}
+					>{index + 1}</button
+				>
+			{/each}
+		</div>
+		<button type="button" onclick={handleLogout} class="big-button">Logout</button>
+	</section>
+</div>
