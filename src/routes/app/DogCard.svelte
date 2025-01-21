@@ -37,7 +37,7 @@
 	<div class="dog-card-fields">
 		<div class="dog-left">
 			<div>Name: {name}</div>
-			<div>Age: {age}</div>
+			<div>Age: {age === 0 ? '<1' : `${age}`}{age === 1 ? ' year' : ' years'}</div>
 			<div>Breed: {breed}</div>
 			<div>ZIP Code: {zip_code}</div>
 		</div>

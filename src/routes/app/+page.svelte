@@ -19,12 +19,14 @@
 	let ageMin = $state(0);
 	let ageMax = $state(20);
 	let favoritesArray: string[] = $state([]);
+	let favoritesObjectArray: Dog[] = $state([]);
 	let matchObject: Dog | undefined = $state();
 	let matchLocationObject: Location | undefined = $state();
 	let favoritesFlag: boolean = $state(false);
 
 	//references to "Get Your Match!" button to be scrolled to
 	let scrollToMatchRef: HTMLElement;
+	let scrollToSearchRef: HTMLElement;
 
 	onMount(() => {
 		getBreeds();
@@ -197,6 +199,7 @@
 		} else {
 			favoritesArray.push(id);
 		}
+		fetchFavoriteDogs(favoritesArray);
 	}
 
 	//submits the favorited dogs to get the ID for the dog match
@@ -269,6 +272,28 @@
 			}
 		}
 	}
+
+	//POST request to fetch dog objects
+	async function fetchFavoriteDogs(dogIdsArray: string[]) {
+		try {
+			const endpoint = `${baseURL}/dogs`;
+			const response = await fetch(endpoint, {
+				credentials: 'include',
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(dogIdsArray)
+			});
+			if (!response.ok) {
+				throw new Error('Error getting Match Id');
+			}
+			const json = await response.json();
+			favoritesObjectArray = json;
+		} catch (error) {
+			if (error instanceof Error) {
+				console.error(error.message);
+			}
+		}
+	}
 </script>
 
 <div class="top-section">
@@ -277,7 +302,7 @@
 		<div>Find the right dog for you!</div>
 		<hr />
 		<p class="instructions">
-			1. Choose your favorite breeds, select your Age Range, and sort your search.
+			1. Choose your favorite breeds, select your age range, and sort your search.
 		</p>
 
 		<div class="filters-container">
@@ -342,28 +367,16 @@
 		</p>
 	</section>
 </div>
-<div class="bottom-section" bind:this={scrollToMatchRef}>
-	<section>
-		<!-- If a match has already been made, the button text changes to "Get New Match?" -->
-		{#if !matchObject}
-			<button
-				type="button"
-				onclick={() => {
-					getMatchId();
-					scrollToMatchRef.scrollIntoView({ behavior: 'smooth' });
-				}}
-				class="big-button narrow-button">Get Your Match!</button
-			>
-		{:else}
-			<button
-				type="button"
-				onclick={() => {
-					getMatchId();
-					scrollToMatchRef.scrollIntoView({ behavior: 'smooth' });
-				}}
-				class="big-button narrow-button">Get New Match?</button
-			>
-		{/if}
+<div class="bottom-section">
+	<section bind:this={scrollToMatchRef}>
+		<button
+			type="button"
+			onclick={() => {
+				getMatchId();
+				scrollToMatchRef.scrollIntoView({ behavior: 'smooth' });
+			}}
+			class="big-button narrow-button">{!matchObject ? 'Get Your Match!' : 'Get New Match?'}</button
+		>
 
 		{#if favoritesFlag}
 			<div class="warning">No match. Be sure you selected your favorites!</div>
@@ -397,6 +410,29 @@
 				</div>
 			</div>
 		{/if}
+
+		{#if favoritesObjectArray.length > 0}
+			<div class="favorites-container">
+				<h1>Your favorites:</h1>
+				<div class="dog-cards">
+					<!-- Create a dog card for each object returned by the search results -->
+					{#each favoritesObjectArray as dog}
+						<DogCard
+							id={dog.id}
+							img={dog.img}
+							name={dog.name}
+							age={dog.age}
+							zip_code={dog.zip_code}
+							breed={dog.breed}
+							{favoritesArray}
+							{toggleFavorites}
+						/>
+					{/each}
+				</div>
+			</div>
+		{/if}
+
+		<h1 bind:this={scrollToSearchRef}>Search results below:</h1>
 		<div class="page-numbers">
 			{#each { length: numberOfPages }, index}
 				<button
@@ -428,7 +464,7 @@
 				<button
 					onclick={() => {
 						currentPage = index + 1;
-						scrollToMatchRef.scrollIntoView({ behavior: 'smooth' });
+						scrollToSearchRef.scrollIntoView({ behavior: 'smooth' });
 					}}
 					class={index + 1 === currentPage ? 'page-number active' : 'page-number'}
 					>{index + 1}</button

@@ -24,3 +24,7 @@ npm run build
 ```
 
 You can preview the production build with `npm run preview`.
+
+## Known bugs
+
+It appears that some browers, particularly Safari and even Chrome installed on Apple products, disable the use of the third-party cookies required for authentication on this app. You will be able to login, but the remainder of the app will be unfunctional. It is my understanding that since this issue appears to be contingent on the user's browser settings, there is nothing further that can be done on the client side to ensure crendentials are sent with fetch requests.

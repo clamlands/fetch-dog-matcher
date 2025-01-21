@@ -37,9 +37,7 @@
 				if (!response.ok) {
 					throw new Error(`Response status: ${response.status}. Error logging in.`);
 				}
-				if (response.ok) {
-					goto('/app');
-				}
+				goto('/app');
 			}
 		} catch (error) {
 			if (error instanceof Error) {
